@@ -1,0 +1,37 @@
+=== MINI TRAFFIC LIGHT CONTROLLER ===
+Assumptions: prior P(Heavy)=0.30; sensor P(High|Heavy)=0.85, P(High|Light)=0.20
+
+--- 1. BAYESIAN INFERENCE ---
+Input : prior P(Heavy)=0.300, readings=['High']
+Step  : reading High: P(Heavy|High) = 0.85*0.300 / 0.3950 = 0.6456
+Output: P(Heavy traffic) = 64.6%
+Why   : a noisy vehicle count is turned into a probability instead of a hard yes/no.
+
+--- 2. LOCAL SEARCH (hill climbing, minimize expected delay) ---
+Input : 4 settings (main/side green): S1=20/40s, S2=30/30s, S3=40/20s, S4=50/10s
+Step  : S1 expected delay = 0.646*70 + 0.354*30 = 55.82 s
+Step  : S2 expected delay = 0.646*52 + 0.354*22 = 41.37 s
+Step  : S3 expected delay = 0.646*40 + 0.354*30 = 36.46 s
+Step  : S4 expected delay = 0.646*46 + 0.354*42 = 44.58 s
+Search: start S1 -> S2 -> S3 (stops: no neighbor is better)
+Output: selected timing S3 (Main 40s / Side 20s), delay 36.46 s/vehicle
+Why   : it walks to the neighboring timing with lower expected delay under the Bayesian belief.
+        (Without the sensor, prior alone would pick S2.)
+
+--- 3. MDP (Extend Green vs Switch) ---
+Input : states Light/Heavy, rewards R(s,a), transitions P(s'|s,a), gamma=0.9
+Step  : one-step Q(Extend Green) = 0.646*8 + 0.354*-2 = 4.46
+Step  : one-step Q(Switch) = 0.646*-5 + 0.354*4 = -1.81
+        Bellman (value iteration) Q(Extend Green) = 53.36
+        Bellman (value iteration) Q(Switch) = 47.62
+Output: decision = EXTEND GREEN
+Why   : it picks the action with the larger belief-weighted long-run reward.
+        (Prior alone would choose Switch.)
+
+=== FINAL SIGNAL PLAN ===
+Timing S3: Main 40s / Side 20s | P(Heavy)=64.6% | Decision: Extend Green
+
+=== EVALUATION vs fixed 30/30 timing (S2) ===
+reading   P(Heavy)  chosen   delay  fixed S2   saved
+High         64.6%      S3   36.46     41.37    4.91
+Low           7.4%      S2   24.23     24.23    0.00

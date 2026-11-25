@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini Traffic Light Controller</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fff;--ink:#1d2430;--mut:#5b6575;--line:#d9d4c8;--acc:#1f6f78;--hot:#c2412d;--ok:#2e9f5b;--bar:#e6e1d4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151c;--card:#19212b;--ink:#e6edf5;--mut:#95a3b5;--line:#2b3644;--acc:#4cc3cf;--hot:#ff7a62;--ok:#4cd58a;--bar:#2a3441}}
+:root[data-theme="dark"]{--bg:#10151c;--card:#19212b;--ink:#e6edf5;--mut:#95a3b5;--line:#2b3644;--acc:#4cc3cf;--hot:#ff7a62;--ok:#4cd58a;--bar:#2a3441}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1050px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:clamp(24px,5vw,36px);margin:.1em 0}h2{font-size:17px;margin:0 0 6px}
+.sub{color:var(--mut);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));margin:14px 0}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:inherit;border:0;border-radius:9px;padding:9px 14px;background:var(--acc);color:#fff;cursor:pointer;font-weight:600}
+button.g{background:var(--bar);color:var(--ink)}button:focus-visible{outline:3px solid var(--hot);outline-offset:2px}
+.big{font-size:40px;font-weight:800;color:var(--acc);line-height:1.1}
+.track{background:var(--bar);border-radius:6px;height:14px;overflow:hidden}.fill{height:100%;background:var(--acc);border-radius:6px;transition:width .4s}
+.row{display:grid;grid-template-columns:78px 1fr 62px;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.row.sel .fill{background:var(--ok)}.row.sel b{color:var(--ok)}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;background:var(--ok);color:#fff;font-weight:700;font-size:14px}
+.mut{color:var(--mut);font-size:13.5px}.eq{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--bar);border-radius:8px;padding:6px 8px;margin:6px 0;overflow-x:auto;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}
+.flex{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:center}
+svg text{fill:var(--ink);font:12px system-ui,sans-serif}
+</style></head><body><main>
+<h1>🚦 Mini Traffic Light Controller</h1>
+<p class="sub">AI Fundamentals · Final Project (topic 8) · By Diar</p>
+
+<section class="card"><h2>1 · Give the controller a sensor reading</h2>
+<div class="ctl">
+<label>Prior P(Heavy) <input type="range" id="prior" min="5" max="95" value="30"> <b id="pv">30%</b></label>
+<button id="bH">Sensor: High count</button><button id="bL">Sensor: Low count</button><button class="g" id="rst">Reset</button>
+</div>
+<p class="mut" id="log" style="margin:8px 0 0"></p></section>
+
+<div class="grid">
+<section class="card"><h2>Bayesian inference</h2>
+<div class="big" id="pH">30%</div><div class="mut">probability that Main road is heavy</div>
+<div class="track" style="margin:8px 0"><div class="fill" id="pbar"></div></div>
+<div class="eq" id="bf"></div>
+<p class="mut">A noisy sensor becomes a probability, not a yes/no.</p></section>
+
+<section class="card"><h2>Local search · hill climbing</h2>
+<div id="ls"></div><p class="mut" id="lp"></p></section>
+
+<section class="card"><h2>MDP · Extend Green or Switch?</h2>
+<div id="mq"></div><p style="margin:8px 0 4px">Decision: <span class="tag" id="dec"></span></p><p class="mut" id="mp"></p></section>
+</div>
+
+<section class="card"><h2>The result at the intersection</h2>
+<div class="flex">
+<svg viewBox="0 0 300 300" role="img" aria-label="Intersection with Main road left-right and Side road up-down">
+<rect x="0" y="120" width="300" height="60" fill="#6b7280"/><rect x="120" y="0" width="60" height="300" fill="#6b7280"/>
+<rect id="gm" x="0" y="120" width="120" height="60" fill="#2e9f5b" opacity=".0"/><rect id="gs" x="120" y="0" width="60" height="120" fill="#2e9f5b" opacity=".0"/>
+<path d="M0 150H120M180 150H300M150 0V120M150 180V300" stroke="#fff" stroke-dasharray="8 8" opacity=".6"/>
+<rect x="60" y="76" width="30" height="40" rx="6" fill="#222"/><circle id="mr" cx="75" cy="88" r="7"/><circle id="mg" cx="75" cy="105" r="7"/>
+<rect x="192" y="62" width="30" height="40" rx="6" fill="#222"/><circle id="sr" cx="207" cy="74" r="7"/><circle id="sg" cx="207" cy="91" r="7"/>
+<text x="6" y="112">Main road</text><text x="188" y="14">Side road</text>
+</svg>
+<div><p style="margin:0 0 4px"><b id="plan"></b></p><p class="mut" id="cd" style="margin:0 0 8px"></p>
+<div class="track"><div class="fill" id="cbar" style="transition:none"></div></div>
+<p class="mut">The lights run the selected timing (1 second of the plan = 0.2 real seconds).</p></div>
+</div></section>
+
+<section class="card" style="margin-top:14px"><h2>Compared with a fixed 30/30 signal</h2>
+<table><thead><tr><th>Reading</th><th>P(Heavy)</th><th>Chosen</th><th>Delay</th><th>Fixed S2</th><th>Saved</th></tr></thead><tbody id="ev"></tbody></table>
+<p class="mut">Delay in seconds per vehicle, expected under the belief.</p></section>
+
+<section class="card" style="margin-top:14px"><h2>Assumptions (hypothetical numbers, no dataset)</h2>
+<p class="mut" style="margin:0">Sensor: P(High | Heavy) = 0.85, P(High | Light) = 0.20. Timings S1 to S4 give Main/Side green of 20/40, 30/30, 40/20, 50/10 seconds. Average delay, Heavy: 70, 52, 40, 46; Light: 30, 22, 30, 42. MDP: γ = 0.9; rewards (Light, Extend) = −2, (Light, Switch) = +4, (Heavy, Extend) = +8, (Heavy, Switch) = −5. Repeated readings are treated as independent and each posterior becomes the next prior. The same belief feeds both the timing search and the MDP, so the three algorithms work as one pipeline.</p></section>
+</main>
+<script>
+const SENSOR={Heavy:{High:.85,Low:.15},Light:{High:.2,Low:.8}},
+SET=[["S1",20,40],["S2",30,30],["S3",40,20],["S4",50,10]],
+DEL={Heavy:[70,52,40,46],Light:[30,22,30,42]},ST=["Light","Heavy"],AC=["Extend Green","Switch"],
+R={"Light|Extend Green":-2,"Light|Switch":4,"Heavy|Extend Green":8,"Heavy|Switch":-5},
+T={"Light|Extend Green":{Light:.7,Heavy:.3},"Light|Switch":{Light:.8,Heavy:.2},"Heavy|Extend Green":{Light:.4,Heavy:.6},"Heavy|Switch":{Light:.2,Heavy:.8}},G=.9;
+const $=s=>document.querySelector(s),pct=x=>(x*100).toFixed(1)+"%";
+let reads=[];
+const bayes=(p,o)=>{const h=SENSOR.Heavy[o],l=SENSOR.Light[o],e=h*p+l*(1-p);return[h*p/e,e]};
+const ed=(i,p)=>p*DEL.Heavy[i]+(1-p)*DEL.Light[i];
+function climb(p){let c=0,path=[0];for(;;){const n=[c-1,c+1].filter(j=>j>=0&&j<4),b=n.reduce((a,j)=>ed(j,p)<ed(a,p)?j:a);if(ed(b,p)>=ed(c,p))return[c,path];c=b;path.push(c)}}
+const q=(s,a,V)=>R[s+"|"+a]+G*Object.entries(T[s+"|"+a]).reduce((t,[s2,pr])=>t+pr*V[s2],0);
+function vi(){let V={Light:0,Heavy:0};for(let k=0;k<100;k++){const N={};ST.forEach(s=>N[s]=Math.max(...AC.map(a=>q(s,a,V))));V=N}return V}
+const VI=vi(),V0={Light:0,Heavy:0};
+const bq=(p,V)=>Object.fromEntries(AC.map(a=>[a,p*q("Heavy",a,V)+(1-p)*q("Light",a,V)]));
+const best=o=>Object.keys(o).reduce((a,b)=>o[b]>o[a]?b:a);
+function decide(p){const[b,path]=climb(p);return{b,path,q1:bq(p,V0),qn:bq(p,VI)}}
+let timer,plan=[30,30];
+function render(){
+ const prior=+$("#prior").value/100;$("#pv").textContent=Math.round(prior*100)+"%";
+ let p=prior,steps=[];
+ reads.forEach(o=>{const[n,e]=bayes(p,o);steps.push(`P(Heavy|${o}) = ${SENSOR.Heavy[o]}×${p.toFixed(3)} / ${e.toFixed(3)} = ${n.toFixed(3)}`);p=n});
+ $("#log").textContent=reads.length?"Readings so far: "+reads.join(", "):"No readings yet: the controller only has the prior.";
+ $("#pH").textContent=pct(p);$("#pbar").style.width=p*100+"%";
+ $("#bf").textContent=steps.length?steps[steps.length-1]:"prior P(Heavy) = "+prior.toFixed(3);
+ const d=decide(p),d0=decide(prior);
+ const mx=Math.max(...SET.map((_,i)=>ed(i,p)));
+ $("#ls").innerHTML=SET.map((s,i)=>`<div class="row ${i===d.b?"sel":""}"><b>${s[0]} ${s[1]}/${s[2]}</b><div class="track"><div class="fill" style="width:${ed(i,p)/mx*100}%"></div></div><span>${ed(i,p).toFixed(1)} s</span></div>`).join("");
+ $("#lp").textContent="Search path: "+d.path.map(i=>SET[i][0]).join(" → ")+". Stops when no neighbor is better. Prior alone would pick "+SET[d0.b][0]+".";
+ const vals=Object.values(d.qn),lo=Math.min(...vals),hi=Math.max(...vals),act=best(d.qn),act0=best(d0.qn);
+ $("#mq").innerHTML=AC.map(a=>`<div class="row ${a===act?"sel":""}" style="grid-template-columns:96px 1fr 62px"><b>${a}</b><div class="track"><div class="fill" style="width:${10+(d.qn[a]-lo)/((hi-lo)||1)*85}%"></div></div><span>${d.qn[a].toFixed(1)}</span></div>`).join("");
+ $("#dec").textContent=act;
+ $("#mp").textContent=`One-step Q: Extend ${d.q1["Extend Green"].toFixed(2)}, Switch ${d.q1.Switch.toFixed(2)}. Bars show the long-run Bellman values weighted by the belief. Prior alone would choose ${act0}.`;
+ const[,m,s]=SET[d.b];plan=[m,s];$("#plan").textContent=`Timing ${SET[d.b][0]}: Main ${m} s / Side ${s} s · ${act==="Extend Green"?"hold the current green":"switch to Side now"}`;
+ $("#ev").innerHTML=["High","Low"].map(o=>{const pp=bayes(prior,o)[0],b=decide(pp).b,dd=ed(b,pp),f=ed(1,pp);return`<tr><td>${o}</td><td>${pct(pp)}</td><td>${SET[b][0]}</td><td>${dd.toFixed(2)}</td><td>${f.toFixed(2)}</td><td>${(f-dd).toFixed(2)}</td></tr>`}).join("");
+ run();
+}
+function run(){clearInterval(timer);let t=0;const[m,s]=plan,tot=m+s;
+ const paint=()=>{const mg=t<m;$("#mg").setAttribute("fill",mg?"#2e9f5b":"#3a3a3a");$("#mr").setAttribute("fill",mg?"#3a3a3a":"#d33");
+  $("#sg").setAttribute("fill",mg?"#3a3a3a":"#2e9f5b");$("#sr").setAttribute("fill",mg?"#d33":"#3a3a3a");
+  $("#gm").setAttribute("opacity",mg?".35":"0");$("#gs").setAttribute("opacity",mg?"0":".35");
+  $("#cd").textContent=(mg?"Main":"Side")+" green · "+(mg?m-t:tot-t)+" s left";$("#cbar").style.width=(mg?(m-t)/m:(tot-t)/s)*100+"%"};
+ paint();timer=setInterval(()=>{t=(t+1)%tot;paint()},200)}
+$("#bH").onclick=()=>{reads.push("High");render()};$("#bL").onclick=()=>{reads.push("Low");render()};
+$("#rst").onclick=()=>{reads=[];render()};$("#prior").oninput=render;render();
+</script></body></html>
