@@ -85,12 +85,6 @@ The program structure and report formatting were drafted with Claude (an AI assi
 ## Possible improvements
 Learn the sensor and delay tables from real counts; use an HMM so traffic evolves over time (Lecture 7); use Q-learning instead of a known transition table (Lecture 5); add more roads and use A* or beam search over phase plans.
 
-## Likely defense questions
-- **Why is the Bayesian step needed?** It converts a noisy count into a probability that both other algorithms use.
-- **Can hill climbing get stuck?** Yes, in a local minimum. Here the delay curve over S1..S4 has one minimum; with more settings use random restarts or annealing.
-- **Why does the decision change with evidence?** The prior (30%) favors Switch; at 64.6% Heavy, Extend Green has the larger expected reward.
-- **What is a Bellman update?** Reward now plus discounted value of the next state, averaged over transitions.
-- **What if the sensor said "Low"?** P(Heavy) falls to 7.4%, so it keeps 30/30 and switches.
 
 ## Repository structure
 ```
